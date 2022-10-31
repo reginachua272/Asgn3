@@ -1,14 +1,13 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"log"
 	"net"
 	"os"
 	"sync"
-	"time"
+	
 
 	// this has to be the same as the go.mod module,
 	// followed by the path to the folder the proto file is in.
@@ -115,14 +114,6 @@ func setLog() {
 	log.SetOutput(f)
 }
 
-
-func (s *Server) AskForTime(ctx context.Context, in *gRPC.AskForTimeMessage) (*gRPC.TimeMessage, error) {
-	log.Printf("Client with ID %d asked for the time\n", in.ClientId)
-	return &gRPC.TimeMessage{
-		Time:       time.Now().String(),
-		ServerName: s.name,
-	}, nil
-}
 
 
 
