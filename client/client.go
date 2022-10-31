@@ -120,7 +120,7 @@ func setLog() {
 }
 
 
-
+// this is to create the client input channel and send the message to the server
 func waitForTimeRequest(client *Client) {
 	
 
@@ -135,6 +135,7 @@ func waitForTimeRequest(client *Client) {
 	for scanner.Scan() {
 		input := scanner.Text()
 		mes := input
+		// this is to broadcast that client is exiting the server
 		if input == "exit" {
 			t += 1
 			mes := "Participant " + client.name + " left Chitty-Chat at Lamport time " + strconv.Itoa(t)
@@ -142,10 +143,11 @@ func waitForTimeRequest(client *Client) {
 				log.Fatal(err)
 			}
 			ServerConn.Close()
+			// this is to kill the connectToServer function
 			state = 1
 			break
 		}
-		//send for broadcast
+		//send for broadcast, increment the lamport timestamp 
 		t+=1
 		if err := stream.SendMsg(&gRPC.ChatRequest{Message: mes,Time: int64(t)}); err != nil {
 			log.Fatal(err)
@@ -156,7 +158,7 @@ func waitForTimeRequest(client *Client) {
 	}
 }
 
-
+// this is for receiving rmessage from the server
 func chat(ctx context.Context,clientName string){
 	stream, err := server.Chat(ctx)
 	if err != nil {
@@ -178,6 +180,8 @@ func chat(ctx context.Context,clientName string){
 		// msg := resp.Message
 		// length := len(resp.Message)
 		// value,_ := strconv.Atoi(msg[length-2:length-1])
+		
+		// this is to get the max time between the received timestamp of the message and its current timestamp for the lamport timestamp
 		if int(resp.Time) > t {
 			t = int(resp.Time)
 		}

@@ -172,6 +172,7 @@ func (s *Server) Chat(srv gRPC.Template_ChatServer) error {
 			log.Printf("recv err: %v", err)
 			break
 		}
+		// to broadcast message received from clients with the timestamp 
 		log.Printf("broadcast: %s,%d", resp.Message,int(resp.Time))
 		for _, ss := range s.getClients() {
 			if err := ss.Send(&gRPC.ChatResponse{Message: resp.Message, Time: resp.Time}); err != nil {
