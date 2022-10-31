@@ -4,7 +4,6 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io"
 	"log"
 	"net"
 	"os"
@@ -85,46 +84,6 @@ func launchServer() {
 	// code here is unreachable because grpcServer.Serve occupies the current thread.
 }
 
-// The method format can be found in the pb.go file. If the format is wrong, the server type will give an error.
-func (s *Server) Increment(ctx context.Context, Amount *gRPC.Amount) (*gRPC.Ack, error) {
-	// locks the server ensuring no one else can increment the value at the same time.
-	// and unlocks the server when the method is done.
-	s.mutex.Lock()
-	defer s.mutex.Unlock()
-
-	// increments the value by the amount given in the request,
-	// and returns the new value.
-	s.incrementValue += int64(Amount.GetValue())
-	return &gRPC.Ack{NewValue: s.incrementValue}, nil
-}
-//For an endpoint that streams messages, then we need to give the method a stream and return an error.
-// In this case you get the input from the stream and send the return type back over the stream too.
-
-func (s *Server) SayHi(msgStream gRPC.Template_SayHiServer) error {
-	
-	for {
-		// get the next message from the stream
-		msg, err := msgStream.Recv()
-		
-		// the stream is closed so we can exit the loop
-		if err == io.EOF {
-			break
-		}
-		// some other error
-		if err != nil {
-			return err
-		}
-		
-		// log the message
-		log.Printf("Received message from %s: %s", msg.ClientName, msg.Message)
-	}
-
-	// be a nice server and say goodbye to the client :)
-	ack := &gRPC.Farewell{Message: "Goodbye"}
-	msgStream.SendAndClose(ack)
-
-	return nil
-}
 
 // Get preferred outbound ip of this machine
 // Usefull if you have to know which ip you should dial, in a client running on an other computer

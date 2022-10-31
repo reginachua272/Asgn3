@@ -103,52 +103,6 @@ func ConnectToServer() {
 
 	
 
-func incrementVal(val int64) {
-	//create amount type
-	amount := &gRPC.Amount{
-		ClientName: *clientsName,
-		Value:      val, //cast from int to int32
-	}
-
-	//Make gRPC call to server with amount, and recieve acknowlegdement back.
-	ack, err := server.Increment(context.Background(), amount)
-	if err != nil {
-		log.Printf("Client %s: no response from the server, attempting to reconnect", *clientsName)
-		log.Println(err)
-	}
-
-	// check if the server has handled the request correctly
-	if ack.NewValue >= val {
-		fmt.Printf("Success, the new value is now %d\n", ack.NewValue)
-	} else {
-		// something could be added here to handle the error
-		// but hopefully this will never be reached
-		fmt.Println("Oh no something went wrong :(")
-	}
-}
-
-func sayHi() {
-	// get a stream to the server
-	stream, err := server.SayHi(context.Background())
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
-	// send some messages to the server
-	stream.Send(&gRPC.Greeding{ClientName: *clientsName, Message: "Hi"})
-	stream.Send(&gRPC.Greeding{ClientName: *clientsName, Message: "How are you?"})
-	stream.Send(&gRPC.Greeding{ClientName: *clientsName, Message: "I'm fine, thanks."})
-	
-
-	// close the stream
-	farewell, err := stream.CloseAndRecv()
-	if err != nil {
-		log.Println(err)
-		return
-	}
-	log.Println("server says: ", farewell)
-}
 
 // Function which returns a true boolean if the connection to the server is ready, and false if it's not.
 func conReady(s gRPC.TemplateClient) bool {

@@ -22,11 +22,6 @@ const _ = grpc.SupportPackageIsVersion7
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type TemplateClient interface {
-	//Add RPC endpoints/methods to the service
-	//one message is sent and one is recieved
-	Increment(ctx context.Context, in *Amount, opts ...grpc.CallOption) (*Ack, error)
-	// many messages are sent and one is recieved
-	SayHi(ctx context.Context, opts ...grpc.CallOption) (Template_SayHiClient, error)
 	AskForTime(ctx context.Context, in *AskForTimeMessage, opts ...grpc.CallOption) (*TimeMessage, error)
 	Chat(ctx context.Context, opts ...grpc.CallOption) (Template_ChatClient, error)
 }
@@ -39,49 +34,6 @@ func NewTemplateClient(cc grpc.ClientConnInterface) TemplateClient {
 	return &templateClient{cc}
 }
 
-func (c *templateClient) Increment(ctx context.Context, in *Amount, opts ...grpc.CallOption) (*Ack, error) {
-	out := new(Ack)
-	err := c.cc.Invoke(ctx, "/proto.Template/Increment", in, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *templateClient) SayHi(ctx context.Context, opts ...grpc.CallOption) (Template_SayHiClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Template_ServiceDesc.Streams[0], "/proto.Template/SayHi", opts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &templateSayHiClient{stream}
-	return x, nil
-}
-
-type Template_SayHiClient interface {
-	Send(*Greeding) error
-	CloseAndRecv() (*Farewell, error)
-	grpc.ClientStream
-}
-
-type templateSayHiClient struct {
-	grpc.ClientStream
-}
-
-func (x *templateSayHiClient) Send(m *Greeding) error {
-	return x.ClientStream.SendMsg(m)
-}
-
-func (x *templateSayHiClient) CloseAndRecv() (*Farewell, error) {
-	if err := x.ClientStream.CloseSend(); err != nil {
-		return nil, err
-	}
-	m := new(Farewell)
-	if err := x.ClientStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
-}
-
 func (c *templateClient) AskForTime(ctx context.Context, in *AskForTimeMessage, opts ...grpc.CallOption) (*TimeMessage, error) {
 	out := new(TimeMessage)
 	err := c.cc.Invoke(ctx, "/proto.Template/AskForTime", in, out, opts...)
@@ -92,7 +44,7 @@ func (c *templateClient) AskForTime(ctx context.Context, in *AskForTimeMessage, 
 }
 
 func (c *templateClient) Chat(ctx context.Context, opts ...grpc.CallOption) (Template_ChatClient, error) {
-	stream, err := c.cc.NewStream(ctx, &Template_ServiceDesc.Streams[1], "/proto.Template/chat", opts...)
+	stream, err := c.cc.NewStream(ctx, &Template_ServiceDesc.Streams[0], "/proto.Template/chat", opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -126,11 +78,6 @@ func (x *templateChatClient) Recv() (*ChatResponse, error) {
 // All implementations must embed UnimplementedTemplateServer
 // for forward compatibility
 type TemplateServer interface {
-	//Add RPC endpoints/methods to the service
-	//one message is sent and one is recieved
-	Increment(context.Context, *Amount) (*Ack, error)
-	// many messages are sent and one is recieved
-	SayHi(Template_SayHiServer) error
 	AskForTime(context.Context, *AskForTimeMessage) (*TimeMessage, error)
 	Chat(Template_ChatServer) error
 	mustEmbedUnimplementedTemplateServer()
@@ -140,12 +87,6 @@ type TemplateServer interface {
 type UnimplementedTemplateServer struct {
 }
 
-func (UnimplementedTemplateServer) Increment(context.Context, *Amount) (*Ack, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method Increment not implemented")
-}
-func (UnimplementedTemplateServer) SayHi(Template_SayHiServer) error {
-	return status.Errorf(codes.Unimplemented, "method SayHi not implemented")
-}
 func (UnimplementedTemplateServer) AskForTime(context.Context, *AskForTimeMessage) (*TimeMessage, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method AskForTime not implemented")
 }
@@ -163,50 +104,6 @@ type UnsafeTemplateServer interface {
 
 func RegisterTemplateServer(s grpc.ServiceRegistrar, srv TemplateServer) {
 	s.RegisterService(&Template_ServiceDesc, srv)
-}
-
-func _Template_Increment_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(Amount)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(TemplateServer).Increment(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: "/proto.Template/Increment",
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(TemplateServer).Increment(ctx, req.(*Amount))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _Template_SayHi_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(TemplateServer).SayHi(&templateSayHiServer{stream})
-}
-
-type Template_SayHiServer interface {
-	SendAndClose(*Farewell) error
-	Recv() (*Greeding, error)
-	grpc.ServerStream
-}
-
-type templateSayHiServer struct {
-	grpc.ServerStream
-}
-
-func (x *templateSayHiServer) SendAndClose(m *Farewell) error {
-	return x.ServerStream.SendMsg(m)
-}
-
-func (x *templateSayHiServer) Recv() (*Greeding, error) {
-	m := new(Greeding)
-	if err := x.ServerStream.RecvMsg(m); err != nil {
-		return nil, err
-	}
-	return m, nil
 }
 
 func _Template_AskForTime_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
@@ -261,20 +158,11 @@ var Template_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*TemplateServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "Increment",
-			Handler:    _Template_Increment_Handler,
-		},
-		{
 			MethodName: "AskForTime",
 			Handler:    _Template_AskForTime_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "SayHi",
-			Handler:       _Template_SayHi_Handler,
-			ClientStreams: true,
-		},
 		{
 			StreamName:    "chat",
 			Handler:       _Template_Chat_Handler,
