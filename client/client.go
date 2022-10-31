@@ -185,6 +185,7 @@ func chat(ctx context.Context,clientName string){
 		if int(resp.Time) > t {
 			t = int(resp.Time)
 		}
+		t += 1
 		log.Printf("recv: %s,%d", resp.Message,int(resp.Time))
 	}
 	
